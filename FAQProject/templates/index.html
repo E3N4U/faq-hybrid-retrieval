@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ 智能问答系统</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 700px;
+            margin: 50px auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            background: #007bff;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 18px;
+            margin-bottom: 15px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
+
+        .question {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #222;
+        }
+
+        .answer {
+            color: #444;
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+
+        .score {
+            font-size: 13px;
+            color: #888;
+        }
+
+        .empty {
+            text-align: center;
+            color: #999;
+            margin-top: 30px;
+        }
+
+        .loading {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>FAQ 智能问答系统</h1>
+
+    <div class="search-box">
+        <input
+            type="text"
+            id="query"
+            placeholder="请输入你的问题..."
+            onkeydown="handleEnter(event)"
+        >
+        <button onclick="searchFAQ()">搜索</button>
+    </div>
+
+    <div id="loading" class="loading"></div>
+
+    <div id="results"></div>
+
+</div>
+
+<script>
+
+async function searchFAQ() {
+
+    const query = document.getElementById("query").value.trim();
+
+    if (!query) {
+        alert("请输入问题");
+        return;
+    }
+
+    document.getElementById("loading").innerHTML = "正在搜索...";
+    document.getElementById("results").innerHTML = "";
+
+    try {
+
+        const response = await fetch(
+            `/search?q=${encodeURIComponent(query)}`
+        );
+
+        const data = await response.json();
+
+        document.getElementById("loading").innerHTML = "";
+
+        const resultsDiv = document.getElementById("results");
+
+        if (!data.results || data.results.length === 0) {
+            resultsDiv.innerHTML = `
+                <div class="empty">
+                    没有找到相关答案
+                </div>
+            `;
+            return;
+        }
+
+        // score 从高到低排序
+        const sortedResults = data.results.sort((a, b) => b.score - a.score);
+
+        // 只显示前5条
+        const topResults = sortedResults.slice(0, 5);
+
+        topResults.forEach((item, index) => {
+
+            const score = Number(item.score || 0).toFixed(4);
+
+            const card = `
+                <div class="card">
+
+                    <div class="question">
+                        TOP ${index + 1} ｜ ❓ ${item.question}
+                    </div>
+
+                    <div class="answer">
+                        💡 ${item.answer}
+                    </div>
+
+                    <div class="score">
+                        匹配分数：${score}
+                    </div>
+
+                </div>
+            `;
+
+            resultsDiv.innerHTML += card;
+        });
+
+    } catch (error) {
+
+        document.getElementById("loading").innerHTML = "";
+
+        document.getElementById("results").innerHTML = `
+            <div class="empty">
+                请求失败：${error}
+            </div>
+        `;
+    }
+}
+
+function handleEnter(event) {
+    if (event.key === "Enter") {
+        searchFAQ();
+    }
+}
+
+</script>
+
+</body>
+</html>
